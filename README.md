@@ -1,140 +1,151 @@
 # Early Adopters Database
 
-Um painel web para gerenciar registros de emails com análise por gráficos, usando **Flask** e **SQLite Cloud**.
+A web dashboard for managing email records with chart-based analytics, built with **Flask** and **SQLite Cloud**.
 
-## Recursos
+## Features
 
-- 📧 Formulário para adicionar emails
-- 📊 Gráficos de análise (por dia e por hora)
-- 📋 Tabela responsiva com busca, paginação e ordenação
-- 🗑️ Remover emails
-- 📥 Exportar dados em CSV
-- ☁️ 100% integrado com SQLite Cloud
-- ⚡ Sem dependências de ORM pesadas (apenas sqlitecloud nativo)
+* Chart analytics (by day and by hour)
+* Responsive table with search, pagination, and sorting
+* Delete emails
+* Export data to CSV
+* Fully integrated with SQLite Cloud
+* No heavy ORM dependencies (native sqlitecloud only)
 
-## Stack Tecnológico
+## Technology Stack
 
 ### Backend
-- **Flask 3.0.0** - Framework web
-- **flask-cors 4.0.0** - Suporte CORS
-- **python-dotenv 1.0.0** - Configuração via `.env`
-- **sqlitecloud 1.0.37** - Driver nativo para SQLite Cloud
+
+* **Flask 3.0.0** – Web framework
+* **flask-cors 4.0.0** – CORS support
+* **python-dotenv 1.0.0** – `.env` configuration
+* **sqlitecloud 1.0.37** – Native SQLite Cloud driver
 
 ### Frontend
-- **Bootstrap 5.3.2** - CSS framework (via CDN)
-- **Chart.js 4.4.0** - Gráficos (via CDN)
+
+* **Bootstrap 5.3.2** – CSS framework (CDN)
+* **Chart.js 4.4.0** – Charts (CDN)
 
 ## Setup
 
-### Pré-requisitos
-- Python 3.8+
-- Uma conta em [SQLite Cloud](https://sqlitecloud.io)
-- Uma database criada no SQLite Cloud
+### Prerequisites
 
-### 1. Clonar o repositório
+* Python 3.8+
+* An account on [SQLite Cloud](https://sqlitecloud.io)
+* A database created in SQLite Cloud
+
+### 1. Clone the repository
 
 ```powershell
 git clone <repo-url>
 cd early-adopters-db
 ```
 
-### 2. Criar e ativar ambiente virtual
+### 2. Create and activate the virtual environment
 
 ```powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 ```
 
-### 3. Instalar dependências
+### 3. Install dependencies
 
 ```powershell
 pip install -r requirements.txt
 ```
 
-### 4. Configurar variáveis de ambiente
+### 4. Configure environment variables
 
-Crie um arquivo `.env` na raiz do projeto:
+Create a `.env` file at the project root:
 
 ```env
 CONNECTION_STRING=sqlitecloud://api-key@host:8860/dbname?apikey=your_api_key
 ```
 
-**Obter a connection string:**
-1. Acesse o painel do SQLite Cloud
-2. Selecione sua database
-3. Copie a connection string (geralmente começa com `sqlitecloud://`)
-4. Cole no arquivo `.env`
+**How to obtain the connection string:**
 
-### 5. Executar a aplicação
+1. Go to your SQLite Cloud dashboard
+2. Select your database
+3. Copy the connection string (usually starts with `sqlitecloud://`)
+4. Paste it inside `.env`
+
+### 5. Run the application
 
 ```powershell
 cd source
 python main.py
 ```
 
-A aplicação estará disponível em: **http://127.0.0.1:5000**
+Application available at: **[http://127.0.0.1:5000](http://127.0.0.1:5000)**
 
-## Estrutura do Projeto
+## Project Structure
 
 ```
 early-adopters-db/
 ├── source/
-│   ├── main.py              # Aplicação Flask com rotas da API
-│   ├── database.py          # Classe Email + conexão sqlitecloud
+│   ├── main.py              # Flask application with API routes
+│   ├── database.py          # Email class + sqlitecloud connection
 │   └── templates/
-│       └── index.html       # Interface Bootstrap + gráficos Chart.js
-├── requirements.txt         # Dependências Python
-├── .env.example            # Exemplo de variáveis de ambiente
-├── test_connection.py      # Script para testar conexão
-├── README.md               # Este arquivo
-└── venv/                   # Ambiente virtual (criado após setup)
+│       └── index.html       # Bootstrap UI + Chart.js graphs
+├── requirements.txt         # Python dependencies
+├── .env.example             # Environment variables example
+├── test_connection.py       # Database connection test
+├── README.md                # This file
+└── venv/                    # Virtual environment
 ```
 
 ## API Endpoints
 
 ### GET `/`
-Serve a página principal (HTML).
+
+Serves the main HTML page.
 
 ### GET `/api/emails`
-Retorna lista de todos os emails registrados.
+
+Returns a list of all registered emails.
 
 **Response:**
+
 ```json
 [
   {
     "email": "user@example.com",
-    "time": "07/12/2025 14:30:45"
+    "time": "12/07/2025 14:30:45"
   },
   {
     "email": "another@example.com",
-    "time": "07/12/2025 14:25:10"
+    "time": "12/07/2025 14:25:10"
   }
 ]
 ```
 
 ### POST `/api/emails`
-Adiciona um novo email.
+
+Adds a new email.
 
 **Request:**
+
 ```json
 {
-  "email": "novo@example.com"
+  "email": "new@example.com"
 }
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Email added successfully",
-  "email": "novo@example.com",
-  "time": "07/12/2025 14:30:45"
+  "email": "new@example.com",
+  "time": "12/07/2025 14:30:45"
 }
 ```
 
 ### DELETE `/api/emails`
-Remove um email.
+
+Deletes an email.
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com"
@@ -142,6 +153,7 @@ Remove um email.
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Email deleted successfully"
@@ -149,9 +161,11 @@ Remove um email.
 ```
 
 ### GET `/api/emails/stats`
-Retorna estatísticas de registros.
+
+Returns registration statistics.
 
 **Response:**
+
 ```json
 {
   "total": 42,
@@ -169,62 +183,67 @@ Retorna estatísticas de registros.
 }
 ```
 
-## Como Funciona
+## How It Works
 
-### Banco de Dados (SQLite Cloud)
+### Database (SQLite Cloud)
 
-A classe `Email` em `database.py` oferece uma interface simples para interagir com o SQLite Cloud:
+The `Email` class in `database.py` provides a simple interface for interacting with SQLite Cloud:
 
 ```python
-# Criar um novo email
+# Create a new email
 new_email = Email.create("user@example.com")
 
-# Listar todos os emails
+# List all emails
 emails = Email.select()
 
-# Remover um email
+# Delete an email
 Email.delete("user@example.com")
 
-# Obter estatísticas
+# Get statistics
 stats = Email.get_stats()
 ```
 
 ### Frontend
 
-O arquivo `index.html` implementa:
-- **Tabela** com busca, paginação e ordenação
-- **Gráficos** (linha e barra) usando Chart.js
-- **Botões** de ação (copiar, remover)
-- **Export** para CSV
+`index.html` implements:
 
-Todos os dados são carregados dynamicamente via API REST.
+* Table with search, sorting, and pagination
+* Line and bar charts built with Chart.js
+* Action buttons (copy, delete)
+* CSV export
+
+All data is loaded dynamically via REST API.
 
 ## Troubleshooting
 
-### Erro: "CONNECTION_STRING environment variable must be set"
-- Verifique se o arquivo `.env` existe na raiz do projeto
-- Verifique se `CONNECTION_STRING` está configurada corretamente
-- Use `.env.example` como referência
+### Error: "CONNECTION_STRING environment variable must be set"
 
-### Erro: "ModuleNotFoundError: No module named 'sqlitecloud'"
+* Ensure `.env` exists in the project root
+* Ensure `CONNECTION_STRING` is properly set
+* Use `.env.example` as reference
+
+### Error: "ModuleNotFoundError: No module named 'sqlitecloud'"
+
 ```powershell
 pip install sqlitecloud
 ```
 
-### Erro: "Connection refused" ou timeout
-- Verifique se a connection string está correta
-- Verifique se tem acesso à rede (firewall, VPN, etc.)
-- Verifique se a API key é válida
-- Verifique se a database existe no SQLite Cloud
+### Error: "Connection refused" or timeout
 
-### Tabela vazia no painel
-- Verifique se está conectado à database correta
-- Verifique se a tabela `emails` foi criada (deve ser automático)
-- Verifique os logs no terminal da aplicação
+* Check whether the connection string is correct
+* Verify network conditions (firewall, VPN, etc.)
+* Ensure the API key is valid
+* Ensure the database exists in SQLite Cloud
 
-## Desenvolvimento
+### Empty table on dashboard
 
-### Rodar com debug ativado
+* Make sure you're connected to the right database
+* Ensure the `emails` table was created (automatic)
+* Check application logs
+
+## Development
+
+### Run in debug mode
 
 ```powershell
 $env:FLASK_ENV = "development"
@@ -233,13 +252,13 @@ cd source
 python main.py
 ```
 
-### Testar conexão ao banco
+### Test database connection
 
 ```powershell
 python test_connection.py
 ```
 
-### Rodar testes (se disponíveis)
+### Run tests (if available)
 
 ```powershell
 pytest tests/
@@ -247,24 +266,21 @@ pytest tests/
 
 ## Environment Variables
 
-| Variável | Obrigatória | Exemplo |
-|----------|-----------|---------|
-| `CONNECTION_STRING` | Sim | `sqlitecloud://api-key@host:8860/db?apikey=key` |
-| `FLASK_ENV` | Não | `development` ou `production` |
-| `FLASK_DEBUG` | Não | `1` ou `0` |
+| Variable            | Required | Example                                         |
+| ------------------- | -------- | ----------------------------------------------- |
+| `CONNECTION_STRING` | Yes      | `sqlitecloud://api-key@host:8860/db?apikey=key` |
+| `FLASK_ENV`         | No       | `development` or `production`                   |
+| `FLASK_DEBUG`       | No       | `1` or `0`                                      |
 
-## Deployed com Sucesso? 🎉
+## Successfully Deployed?
 
-Se conseguiu rodar a aplicação:
-1. Abra http://127.0.0.1:5000
-2. Adicione alguns emails
-3. Veja os gráficos se atualizarem
-4. Teste a busca, paginação e export
+If everything is running:
 
-## Contribuindo
+1. Open [http://127.0.0.1:5000](http://127.0.0.1:5000)
+2. Add some emails
+3. Watch the charts update
+4. Test search, pagination, and export
 
-Feel free to fork, modify, and improve!
+---
 
-## Licença
-
-MIT
+Se quiser, posso gerar também a versão em inglês com layout de README.md mais profissional.
