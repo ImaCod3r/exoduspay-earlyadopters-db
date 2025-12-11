@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Emails</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><b>Early Adopters DB</b></a>
+        </div>
+    </nav>
+
+    <main class="container my-4">
+        <div class="row">
+            <!-- Gráficos -->
+            <div class="col-12 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <span>Análise de Registros</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-12 col-lg-6 mb-3">
+                                <h6>Registros por Dia</h6>
+                                <canvas id="chartByDay" height="80"></canvas>
+                            </div>
+                            <div class="col-12 col-lg-6 mb-3">
+                                <h6>Registros por Hora</h6>
+                                <canvas id="chartByHour" height="80"></canvas>
+                            </div>
+                        </div>
+                        <div class="text-center mt-2">
+                            <small id="statsText" class="text-muted">Total: -- registros</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabela de emails -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Emails registrados</span>
+                    <div class="d-flex gap-2">
+                        <input id="searchInput" class="form-control form-control-sm" placeholder="Buscar email" />
+                        <select id="perPageSelect" class="form-select form-select-sm">
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                        </select>
+                        <button id="exportBtn" class="btn btn-outline-secondary btn-sm">Exportar CSV</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="emailsTable">
+                            <thead>
+                                <tr>
+                                    <th data-col="email" class="sortable" style="cursor:pointer">Email <span
+                                            class="sort-indicator"></span></th>
+                                    <th data-col="time" class="sortable" style="cursor:pointer">Horário <span
+                                            class="sort-indicator"></span></th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="emailsTbody">
+                                <tr>
+                                    <td colspan="3">Carregando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <div>
+                            <small id="summaryText"></small>
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            <button id="prevBtn" class="btn btn-outline-secondary">Anterior</button>
+                            <button id="nextBtn" class="btn btn-outline-secondary">Próximo</button>
+                            <button id="refreshBtn" class="btn btn-secondary">Atualizar</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        </div>
+    </main>
+
+    <footer class="text-center py-3">
+        <small>Feito com ❤️</small>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API = '/api/emails';
+        const STATS_API = '/api/emails/stats';
+
+        // Estado
+        let emailsData = [];
+        let filteredData = [];
+        let currentPage = 1;
+        let perPage = 10;
+        let sortCol = 'time';
+        let sortAsc = false;
+        let chartByDay = null;
+        let chartByHour = null;
+
+        // Elementos
+        const tbody = document.getElementById('emailsTbody');
+        const searchInput = document.getElementById('searchInput');
+        const perPageSelect = document.getElementById('perPageSelect');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const summaryText = document.getElementById('summaryText');
+        const exportBtn = document.getElementById('exportBtn');
+        const statsText = document.getElementById('statsText');
+
+        // ============ Gráficos ============
+        async function fetchAndRenderCharts() {
+            try {
+                const res = await fetch(STATS_API);
+                if (!res.ok) throw new Error('Falha ao buscar stats');
+                const stats = await res.json();
+
+                renderChartByDay(stats.byDay);
+                renderChartByHour(stats.byHour);
+                statsText.textContent = `Total: ${stats.total} registros`;
+            } catch (err) {
+                console.error('Erro ao carregar gráficos:', err);
+            }
+        }
+
+        function renderChartByDay(data) {
+            const ctx = document.getElementById('chartByDay').getContext('2d');
+
+            if (chartByDay) chartByDay.destroy();
+
+            chartByDay = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.date),
+                    datasets: [{
+                        label: 'Emails por dia',
+                        data: data.map(d => d.count),
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        tension: 0.1,
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#0d6efd',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: true, position: 'top' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                    }
+                }
+            });
+        }
+
+        function renderChartByHour(data) {
+            const ctx = document.getElementById('chartByHour').getContext('2d');
+
+            if (chartByHour) chartByHour.destroy();
+
+            chartByHour = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(h => h.hour + 'h'),
+                    datasets: [{
+                        label: 'Emails por hora',
+                        data: data.map(h => h.count),
+                        backgroundColor: '#6f42c1',
+                        borderColor: '#6f42c1',
+                        borderWidth: 1,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: true, position: 'top' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                    }
+                }
+            });
+        }
+
+        // ============ Emails e Tabela ============
+        async function fetchEmails() {
+            tbody.innerHTML = '<tr><td colspan="3">Carregando...</td></tr>';
+            try {
+                const res = await fetch(API);
+                if (!res.ok) throw new Error('Falha ao buscar emails');
+                const data = await res.json();
+                emailsData = Array.isArray(data) ? data : [];
+                currentPage = 1;
+                applyFilters();
+                fetchAndRenderCharts();
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="3">Erro: ${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        function applyFilters() {
+            const q = searchInput.value.trim().toLowerCase();
+            filteredData = emailsData.filter(e => (e.email || '').toLowerCase().includes(q));
+            sortData();
+            renderTable();
+        }
+
+        function sortData() {
+            filteredData.sort((a, b) => {
+                const va = (a[sortCol] || '').toString();
+                const vb = (b[sortCol] || '').toString();
+                if (sortCol === 'time') {
+                    const da = Date.parse(va) || 0;
+                    const db = Date.parse(vb) || 0;
+                    return sortAsc ? da - db : db - da;
+                }
+                if (va < vb) return sortAsc ? -1 : 1;
+                if (va > vb) return sortAsc ? 1 : -1;
+                return 0;
+            });
+        }
+
+        function renderTable() {
+            perPage = parseInt(perPageSelect.value, 10) || 10;
+            const total = filteredData.length;
+            const totalPages = Math.max(1, Math.ceil(total / perPage));
+            if (currentPage > totalPages) currentPage = totalPages;
+            const start = (currentPage - 1) * perPage;
+            const pageItems = filteredData.slice(start, start + perPage);
+
+            if (total === 0) {
+                tbody.innerHTML = '<tr><td colspan="3">Nenhum email registrado</td></tr>';
+            } else {
+                tbody.innerHTML = pageItems.map(e => {
+                    const time = formatTime(e.time);
+                    return `
+                        <tr>
+                            <td>${escapeHtml(e.email)}</td>
+                            <td>${escapeHtml(time)}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button class="btn btn-outline-primary" onclick="copyEmail('${escapeJs(e.email)}')">Copiar</button>
+                                    <button class="btn btn-outline-danger" onclick="removeEmail('${escapeJs(e.email)}')">Remover</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            summaryText.textContent = `Mostrando ${Math.min(total, start + 1)}–${Math.min(total, start + pageItems.length)} de ${total}`;
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+
+            // atualizar indicadores de ordenação visuais
+            document.querySelectorAll('th.sortable').forEach(th => {
+                const col = th.dataset.col;
+                th.querySelector('.sort-indicator').textContent = (col === sortCol) ? (sortAsc ? ' ▲' : ' ▼') : '';
+            });
+        }
+
+        function formatTime(t) {
+            if (!t) return '';
+            const d = new Date(t);
+            if (isNaN(d)) return t;
+            return d.toLocaleString('pt-BR');
+        }
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        // escapes for putting inside single-quoted JS string in onclick
+        function escapeJs(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replaceAll('\\', '\\\\').replaceAll("'", "\\'");
+        }
+
+        window.copyEmail = async function (email) {
+            try {
+                await navigator.clipboard.writeText(email);
+                alert('Email copiado: ' + email);
+            } catch {
+                alert('Falha ao copiar');
+            }
+        };
+
+        window.removeEmail = async function (email) {
+            if (!confirm('Remover ' + email + ' ?')) return;
+            try {
+                const res = await fetch(API, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.error || 'Erro ao remover');
+                await fetchEmails();
+            } catch (err) {
+                alert('Erro: ' + err.message);
+            }
+        };
+
+        // Paginação e controles
+        prevBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderTable(); } });
+        nextBtn.addEventListener('click', () => { currentPage++; renderTable(); });
+        searchInput.addEventListener('input', () => { currentPage = 1; applyFilters(); });
+        perPageSelect.addEventListener('change', () => { currentPage = 1; renderTable(); });
+        document.getElementById('refreshBtn').addEventListener('click', fetchEmails);
+
+        // Ordenação por clique no cabeçalho
+        document.querySelectorAll('th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const col = th.dataset.col;
+                if (sortCol === col) sortAsc = !sortAsc;
+                else { sortCol = col; sortAsc = true; }
+                sortData();
+                renderTable();
+            });
+        });
+
+        // Export CSV
+        exportBtn.addEventListener('click', () => {
+            const rows = [['email', 'time']];
+            // exportar todos os filtrados
+            filteredData.forEach(r => rows.push([r.email || '', r.time || '']));
+            const csv = rows.map(r => r.map(c => `"${String(c).replaceAll('"', '""')}"`).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'emails.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // Inicializa
+        document.addEventListener('DOMContentLoaded', fetchEmails);
+    </script>
+</body>
+
+</html>
