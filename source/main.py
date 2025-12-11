@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 from database import Email
+from send_email import notify_by_email
 
 app = Flask(__name__)
 CORS(app)
@@ -20,6 +21,7 @@ def saveEmail():
 
     try:
         new_email = Email.create(email=email)
+        notify_by_email(email)
         return jsonify({
             "message": "Email added successfully",
             "email": new_email.email,
